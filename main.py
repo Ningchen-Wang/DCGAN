@@ -47,6 +47,9 @@ def main(*args):
     provider = slim.DatasetDataProvider(FLAGS.dataset_name, 
                                         common_queue_capacity=2*FLAGS.batch_size,
                                         common_queue_min=FLAGS.batch_size)
+    train_op_g = slim.learning.create_train_op(g_loss, g_optimizer)
+    train_op_d = slim.learning.create_train_op(d_loss, d_optimizer)
+    train_op = [train_op_g, train_op_d]
     with tf.Session(config=config) as sess:
       if FLAGS.checkpoint_path:
         if not tf.train.checkpoint_exists(FLAGS.checkpoint_path):
@@ -57,7 +60,7 @@ def main(*args):
           sess.run(slim.assign_from_checkpoint(FLAGS.checkpoint_path, restore_vars, ignore_missing_vars=False)
       else:
         sess.run(tf.global_variables_initlizer())
-
+      
    return
 
 if __name__ == '__main__':
