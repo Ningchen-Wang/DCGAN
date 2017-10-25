@@ -61,7 +61,7 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
                                       activation_fn=tf.tanh,
                                       normalizer_fn=None,
                                       scope='deconv2d5')
-  return deconv5
+  return deconv2d5
 
 def dcgan_discriminator(inputs, scope, reuse=None, conv2d1_c=128, 
                         grayscale=False):
