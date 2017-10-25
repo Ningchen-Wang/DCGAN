@@ -52,9 +52,12 @@ def main(*args):
         if not tf.train.checkpoint_exists(FLAGS.checkpoint_path):
           raise ValueError('Checkpoint not exist in path ', FLAGS.checkpoint_path)
         else:
-          saver.restore(sess, FLAGS.checkpoint_path)
+          model_vars = slim.get_model_variables()
+          restore_vars = slim.filter_variables(model_vars, exclude_patterns=split(FLAGS.exclude_scope, ','))
+          sess.run(slim.assign_from_checkpoint(FLAGS.checkpoint_path, restore_vars, ignore_missing_vars=False)
       else:
-        
+        sess.run(tf.global_variables_initlizer())
+
    return
 
 if __name__ == '__main__':
