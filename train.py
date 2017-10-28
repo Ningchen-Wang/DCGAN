@@ -20,14 +20,14 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
-def dcgan_train_step(sess, train_ops, global_steps, train_step_kwargs):
+def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
   """Function that takes a gradient step and specifies whether to stop.
 
   Args:
     sess: The current session.
     train_ops: An `Operation` list that evaluates the gradients and returns the
       total loss for generator and for discriminator.
-    global_steps: A `Tensor` list representing the global training step of
+    global_step: A `Tensor` list representing the global training step of
       generator and discriminator respectively.
     train_step_kwargs: A dictionary of keyword arguments.
 
@@ -53,8 +53,8 @@ def dcgan_train_step(sess, train_ops, global_steps, train_step_kwargs):
 
   generator_train_op = train_ops[0]
   discriminator_train_op = train_ops[1]
-  generator_global_step = global_steps[0]
-  discriminator_global_step = global_steps[1]
+  generator_global_step = train_step_kwargs['g']
+  discriminator_global_step = train_step_kwargs['d']
 
   # Generator step 
   generator_loss, np_global_step = sess.run([generator_train_op, generator_global_step],
@@ -64,7 +64,11 @@ def dcgan_train_step(sess, train_ops, global_steps, train_step_kwargs):
   discriminator_loss, np_global_step = sess.run([discriminator_train_op, discriminator_global_step],
                                                 options=trace_run_options,
                                                 run_metadata=run_metadata)
+  # Increase global_step
+  global_step = tf.assign_add(global_step, 1) 
+
   time_elapsed = time.time() - start_time
+  total_loss = generator_loss + discriminator_loss
 
   if run_metadata is not None:
     tl = timeline.Timeline(run_metadata.step_stats)
@@ -80,8 +84,8 @@ def dcgan_train_step(sess, train_ops, global_steps, train_step_kwargs):
 
   if 'should_log' in train_step_kwargs:
     if sess.run(train_step_kwargs['should_log']):
-      logging.info('global step %d: loss = %.4f (%.3f sec/step)',
-                   np_global_step, total_loss, time_elapsed)
+      logging.info('global step %d: loss = %.4f g_loss = %.4f d_loss = %.4f (%.3f sec/step)',
+                   np_global_step, total_loss, generator_loss, discriminator_loss, time_elapsed)
 
   # TODO(nsilberman): figure out why we can't put this into sess.run. The
   # issue right now is that the stop check depends on the global step. The
@@ -101,4 +105,4 @@ def dcgan_train_step(sess, train_ops, global_steps, train_step_kwargs):
   else:
     should_stop = False
 
-  return generator_loss, discriminator_loss, should_stop
+  return total_loss, should_stop
