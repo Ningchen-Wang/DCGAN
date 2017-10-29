@@ -17,6 +17,8 @@
 # To make train step a take turn process for generator and discriminator in
 # GAN-like networks
 
+import time
+
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
