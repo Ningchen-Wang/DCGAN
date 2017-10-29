@@ -7,7 +7,7 @@ import tensorflow.contrib.slim as slim
 from utils import leaky_relu
 
 def dcgan_generator(inputs, scope, reuse=None, output_height=64, 
-                    output_width=None, fc1_c=1024, greyscale=False):
+                    output_width=None, fc1_c=1024, grayscale=False):
   if not output_width:
     output_width = output_height
 
@@ -18,7 +18,7 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
       raise ValueError('The output of generator is too small, at least 16*16')
     if fc1_c // 8 == 0:
       raise ValueError('The channel of Tensor fc1 is too small, at least 8')
-    if greyscale:
+    if grayscale:
       output_c = 1
     else:
       output_c = 3
@@ -36,7 +36,7 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
                                       activation_fn=tf.nn.relu,
                                       normalizer_fn=slim.batch_norm,
                                       scope='deconv2d2')
-    deconv2d3 = slim.conv2d_transpose(inputs=deconv2,
+    deconv2d3 = slim.conv2d_transpose(inputs=deconv2d2,
                                       num_outputs=fc1_c//4,
                                       kernel_size=5,
                                       stride=2,
@@ -45,7 +45,7 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
                                       normalizer_fn=slim.batch_norm,
                                       scope='deconv2d3')
 
-    deconv2d4 = slim.conv2d_transpose(inputs=deconv3,
+    deconv2d4 = slim.conv2d_transpose(inputs=deconv2d3,
                                       num_outputs=fc1_c//8,
                                       kernel_size=5,
                                       stride=2,
@@ -53,7 +53,7 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
                                       activation_fn=tf.nn.relu,
                                       normalizer_fn=slim.batch_norm,
                                       scope='deconv2d4')
-    deconv2d5 = slim.conv2d_transpose(inputs=deconv4,
+    deconv2d5 = slim.conv2d_transpose(inputs=deconv2d4,
                                       num_outputs=output_c,
                                       kernel_size=5,
                                       stride=2,
@@ -66,10 +66,10 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
 def dcgan_discriminator(inputs, scope, reuse=None, conv2d1_c=128, 
                         grayscale=False):
   if grayscale:
-    if inputs.shape.dims == 3:
+    if inputs.shape.ndims == 3:
       inputs = tf.expand_dims(inputs, -1)
-    elif inputs.shape.dims != 4 or inputs.shape[3] != 1:
-      raise ValueError('Inputs shape is invalid for grayscale images, shape is ', inputs.shape)
+    elif inputs.shape.ndims != 4 or inputs.shape[3] != 1:
+      raise ValueError('Inputs shape is invalid for grayscale images, shape is ', inputs.shape.dims)
   else:
     if inputs.shape.dims != 4 or inputs.shape[3] != 3:
       raise ValueError('Inputs shape is invalid for normal images, shape is ', inputs.shape)
@@ -109,9 +109,11 @@ def dcgan_discriminator(inputs, scope, reuse=None, conv2d1_c=128,
                           activation_fn=leaky_relu,
                           normalizer_fn=slim.batch_norm,
                           scope='conv2d4')
-    fc5 = slim.fully_connected(inputs=conv2d4,
+    flatten5 = slim.flatten(inputs=conv2d4, scope='flatten5')
+    fc5 = slim.fully_connected(inputs=flatten5,
                                num_outputs=1,
                                activation_fn=tf.sigmoid,
                                scope='fc5')
+    fc5 = tf.squeeze(fc5)
   return fc5
 
