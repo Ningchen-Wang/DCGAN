@@ -33,11 +33,21 @@ def main(*args):
   pp.pprint(FLAGS.__dict__['__flags'])
   config = tf.ConfigProto()
   config.gpu_options.allow_growth = True
-  z = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, FLAGS.z_dim), name='z')
-  t = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, 64, 64, 1), name='t')
-  generator_result = dcgan_generator(z, 'Generator', reuse=False, output_height=64, fc1_c=1024, grayscale=True)
+  provider = slim.dataset_data_provider.DatasetDataProvider(dataset_factory.get_dataset(FLAGS.dataset_name, FLAGS.split_name, FLAGS.dataset_dir), 
+                                      common_queue_capacity=2*FLAGS.batch_size,
+                                      common_queue_min=FLAGS.batch_size)
+  [image] = provider.get(['image'])
+  image = tf.to_float(image)
+  image = tf.subtract(tf.divide(image, 127.5), 1)
+  z = tf.random_uniform(shape=([FLAGS.z_dim]), minval=-1, maxval=1, name='z')
+  [image, z] = tf.train.batch([image, z], batch_size=FLAGS.batch_size, capacity=2*FLAGS.batch_size)
+  #z = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, FLAGS.z_dim), name='z')
+  #t = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, 64, 64, 1), name='t')
+  generator_result = dcgan_generator(z, 'Generator', reuse=False, output_height=28, fc1_c=1024, grayscale=True)
+  print(generator_result.shape)
+  print(image.shape)
   discriminator_g = dcgan_discriminator(generator_result, 'Discriminator', reuse=False, conv2d1_c=128, grayscale=True)
-  discriminator_t = dcgan_discriminator(t, 'Discriminator', reuse=True, conv2d1_c=128, grayscale=True)
+  discriminator_t = dcgan_discriminator(image, 'Discriminator', reuse=True, conv2d1_c=128, grayscale=True)
   g_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=discriminator_g)
   d_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.zeros(FLAGS.batch_size), logits=discriminator_g) + \
            tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=discriminator_t)
@@ -51,10 +61,6 @@ def main(*args):
                                        beta2=FLAGS.beta2,
                                        epsilon=FLAGS.epsilon,
                                        name='d-adam')
-  saver = tf.train.Saver()
-  provider = slim.dataset_data_provider.DatasetDataProvider(dataset_factory.get_dataset(FLAGS.dataset_name, FLAGS.split_name, FLAGS.dataset_dir), 
-                                      common_queue_capacity=2*FLAGS.batch_size,
-                                      common_queue_min=FLAGS.batch_size)
   var_g = slim.get_variables(scope='Generator', collection=tf.GraphKeys.TRAINABLE_VARIABLES)
   #print(var_g)
   #print(tf.trainable_variables())
@@ -70,6 +76,7 @@ def main(*args):
                                             initializer=tf.zeros_initializer,
                                             trainable=False)
   global_step = slim.get_or_create_global_step()
+  saver = tf.train.Saver()
   with tf.name_scope('train_step'):
     train_step_kwargs = {}
     train_step_kwargs['g'] = generator_global_step

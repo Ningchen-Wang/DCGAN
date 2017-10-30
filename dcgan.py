@@ -36,6 +36,7 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
                                       activation_fn=tf.nn.relu,
                                       normalizer_fn=slim.batch_norm,
                                       scope='deconv2d2')
+    print(deconv2d2.shape)
     deconv2d3 = slim.conv2d_transpose(inputs=deconv2d2,
                                       num_outputs=fc1_c//4,
                                       kernel_size=5,
