@@ -18,6 +18,7 @@
 # GAN-like networks
 
 import time
+from tensorflow.python.platform import tf_logging as logging
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
@@ -41,7 +42,8 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
     ValueError: if 'should_trace' is in `train_step_kwargs` but `logdir` is not.
   """
   start_time = time.time()
-
+  assert(slim.get_global_step() == global_step)
+  print(global_step.eval())
   trace_run_options = None
   run_metadata = None
   if 'should_trace' in train_step_kwargs:
@@ -59,15 +61,16 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
   discriminator_global_step = train_step_kwargs['d']
 
   # Generator step 
-  generator_loss, np_global_step = sess.run([generator_train_op, generator_global_step],
+  generator_loss, generator_global_step = sess.run([generator_train_op, generator_global_step],
                                             options=trace_run_options,
                                             run_metadata=run_metadata)
   # Discriminator step
-  discriminator_loss, np_global_step = sess.run([discriminator_train_op, discriminator_global_step],
+  discriminator_loss, discriminator_global_step = sess.run([discriminator_train_op, discriminator_global_step],
                                                 options=trace_run_options,
                                                 run_metadata=run_metadata)
   # Increase global_step
-  global_step = tf.assign_add(global_step, 1) 
+  np_global_step = sess.run(train_step_kwargs['global_step_op'])
+  print(global_step.eval(), np_global_step)
 
   time_elapsed = time.time() - start_time
   total_loss = generator_loss + discriminator_loss
@@ -85,6 +88,7 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
                                                            np_global_step)
 
   if 'should_log' in train_step_kwargs:
+    print('log')
     if sess.run(train_step_kwargs['should_log']):
       logging.info('global step %d: loss = %.4f g_loss = %.4f d_loss = %.4f (%.3f sec/step)',
                    np_global_step, total_loss, generator_loss, discriminator_loss, time_elapsed)

@@ -59,7 +59,6 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
                                scope='fc1')
     fc1_reshape = tf.reshape(fc1, [-1, fc1_h, fc1_w, fc1_c])
     bn1 = slim.batch_norm(inputs=fc1_reshape, activation_fn=tf.nn.relu, scope='bn1')
-    print(bn1.shape)
     deconv2d2 = conv2d_transpose(inputs=bn1,
                                  output_shape=[batch_size, deconv2d2_h, deconv2d2_w, fc1_c // 2],
                                  kernel_size=5,
@@ -68,7 +67,6 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
                                  activation_fn=tf.nn.relu,
                                  normalizer_fn=slim.batch_norm,
                                  scope='deconv2d2')
-    print(deconv2d2.shape)
     deconv2d3 = conv2d_transpose(inputs=deconv2d2,
                                  output_shape=[batch_size, deconv2d3_h, deconv2d3_w, fc1_c // 4],
                                  kernel_size=5,
@@ -77,7 +75,6 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
                                  activation_fn=tf.nn.relu,
                                  normalizer_fn=slim.batch_norm,
                                  scope='deconv2d3')
-    print(deconv2d3.shape)
     deconv2d4 = conv2d_transpose(inputs=deconv2d3,
                                  output_shape=[batch_size, deconv2d4_h, deconv2d4_w, fc1_c // 8],
                                  kernel_size=5,

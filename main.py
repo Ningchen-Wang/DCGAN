@@ -41,11 +41,7 @@ def main(*args):
   image = tf.subtract(tf.divide(image, 127.5), 1)
   z = tf.random_uniform(shape=([FLAGS.z_dim]), minval=-1, maxval=1, name='z')
   [image, z] = tf.train.batch([image, z], batch_size=FLAGS.batch_size, capacity=2*FLAGS.batch_size)
-  #z = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, FLAGS.z_dim), name='z')
-  #t = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, 64, 64, 1), name='t')
   generator_result = dcgan_generator(z, 'Generator', reuse=False, output_height=28, fc1_c=1024, grayscale=True)
-  print(generator_result.shape)
-  print(image.shape)
   discriminator_g = dcgan_discriminator(generator_result, 'Discriminator', reuse=False, conv2d1_c=128, grayscale=True)
   discriminator_t = dcgan_discriminator(image, 'Discriminator', reuse=True, conv2d1_c=128, grayscale=True)
   g_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=discriminator_g)
@@ -62,8 +58,6 @@ def main(*args):
                                        epsilon=FLAGS.epsilon,
                                        name='d-adam')
   var_g = slim.get_variables(scope='Generator', collection=tf.GraphKeys.TRAINABLE_VARIABLES)
-  #print(var_g)
-  #print(tf.trainable_variables())
   var_d = slim.get_variables(scope='Discriminator', collection=tf.GraphKeys.TRAINABLE_VARIABLES)
   generator_global_step = slim.variable("generator_global_step", 
                                         shape=[], 
@@ -76,6 +70,7 @@ def main(*args):
                                             initializer=tf.zeros_initializer,
                                             trainable=False)
   global_step = slim.get_or_create_global_step()
+  print(global_step.name)
   saver = tf.train.Saver()
   with tf.name_scope('train_step'):
     train_step_kwargs = {}
@@ -86,6 +81,7 @@ def main(*args):
     else:
       train_step_kwargs['should_stop'] = tf.constant(False)
     train_step_kwargs['should_log'] = tf.equal(tf.mod(global_step, FLAGS.log_every_n_steps), 0)
+    train_step_kwargs['global_step_op'] = tf.assign_add(global_step, 1)
   train_op_g = slim.learning.create_train_op(g_loss, g_optimizer, variables_to_train=var_g, global_step=generator_global_step)
   train_op_d = slim.learning.create_train_op(d_loss, d_optimizer, variables_to_train=var_d, global_step=discriminator_global_step)
   train_op = [train_op_g, train_op_d]
@@ -98,7 +94,7 @@ def main(*args):
         sess.run(slim.assign_from_checkpoint(FLAGS.checkpoint_path, restore_vars, ignore_missing_vars=False))
     else:
       sess.run(tf.global_variables_initializer())
-    slim.learning.train(train_op, FLAGS.train_dir, train_step_fn=dcgan_train_step, train_step_kwargs=train_step_kwargs)
+    slim.learning.train(train_op, FLAGS.train_dir, global_step=global_step, train_step_fn=dcgan_train_step, train_step_kwargs=train_step_kwargs)
   return
 
 if __name__ == '__main__':
