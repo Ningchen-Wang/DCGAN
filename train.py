@@ -68,8 +68,7 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
                                                 options=trace_run_options,
                                                 run_metadata=run_metadata)
   # Increase global_step
-  np_global_step = sess.run([global_step_train_op])
-  print(global_step.eval(), np_global_step)
+  np_global_step = sess.run(global_step_train_op)
 
   time_elapsed = time.time() - start_time
   total_loss = generator_loss + discriminator_loss
@@ -87,9 +86,7 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
                                                            np_global_step)
 
   if 'should_log' in train_step_kwargs:
-    print(train_step_kwargs['should_log'], sess.run(train_step_kwargs['should_log']))
     if sess.run(train_step_kwargs['should_log']):
-      print('???')
       tf.logging.info('global step %d: loss = %.4f g_loss = %.4f d_loss = %.4f (%.3f sec/step)',
                      np_global_step, total_loss, generator_loss, discriminator_loss, time_elapsed)
 

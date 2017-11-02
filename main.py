@@ -31,6 +31,7 @@ def main(*args):
   pp = pprint.PrettyPrinter(indent=4)
   print('Running flags:')
   pp.pprint(FLAGS.__dict__['__flags'])
+  tf.logging.set_verbosity('INFO') 
   config = tf.ConfigProto()
   config.gpu_options.allow_growth = True
   provider = slim.dataset_data_provider.DatasetDataProvider(dataset_factory.get_dataset(FLAGS.dataset_name, FLAGS.split_name, FLAGS.dataset_dir), 
@@ -70,7 +71,6 @@ def main(*args):
                                             initializer=tf.zeros_initializer,
                                             trainable=False)
   global_step = slim.get_or_create_global_step()
-  print(global_step.name)
   saver = tf.train.Saver()
   with tf.name_scope('train_step'):
     train_step_kwargs = {}
