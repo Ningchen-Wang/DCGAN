@@ -18,7 +18,6 @@
 # GAN-like networks
 
 import time
-from tensorflow.python.platform import tf_logging as logging
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
@@ -43,7 +42,6 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
   """
   start_time = time.time()
   assert(slim.get_global_step() == global_step)
-  print(global_step.eval())
   trace_run_options = None
   run_metadata = None
   if 'should_trace' in train_step_kwargs:
@@ -57,6 +55,7 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
 
   generator_train_op = train_ops[0]
   discriminator_train_op = train_ops[1]
+  global_step_train_op = train_ops[2]
   generator_global_step = train_step_kwargs['g']
   discriminator_global_step = train_step_kwargs['d']
 
@@ -69,7 +68,7 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
                                                 options=trace_run_options,
                                                 run_metadata=run_metadata)
   # Increase global_step
-  np_global_step = sess.run(train_step_kwargs['global_step_op'])
+  np_global_step = sess.run([global_step_train_op])
   print(global_step.eval(), np_global_step)
 
   time_elapsed = time.time() - start_time
@@ -80,7 +79,7 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
     trace = tl.generate_chrome_trace_format()
     trace_filename = os.path.join(train_step_kwargs['logdir'],
                                   'tf_trace-%d.json' % np_global_step)
-    logging.info('Writing trace to %s', trace_filename)
+    tf.logging.info('Writing trace to %s', trace_filename)
     file_io.write_string_to_file(trace_filename, trace)
     if 'summary_writer' in train_step_kwargs:
       train_step_kwargs['summary_writer'].add_run_metadata(run_metadata,
@@ -88,10 +87,11 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
                                                            np_global_step)
 
   if 'should_log' in train_step_kwargs:
-    print('log')
+    print(train_step_kwargs['should_log'], sess.run(train_step_kwargs['should_log']))
     if sess.run(train_step_kwargs['should_log']):
-      logging.info('global step %d: loss = %.4f g_loss = %.4f d_loss = %.4f (%.3f sec/step)',
-                   np_global_step, total_loss, generator_loss, discriminator_loss, time_elapsed)
+      print('???')
+      tf.logging.info('global step %d: loss = %.4f g_loss = %.4f d_loss = %.4f (%.3f sec/step)',
+                     np_global_step, total_loss, generator_loss, discriminator_loss, time_elapsed)
 
   # TODO(nsilberman): figure out why we can't put this into sess.run. The
   # issue right now is that the stop check depends on the global step. The

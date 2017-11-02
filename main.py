@@ -81,10 +81,11 @@ def main(*args):
     else:
       train_step_kwargs['should_stop'] = tf.constant(False)
     train_step_kwargs['should_log'] = tf.equal(tf.mod(global_step, FLAGS.log_every_n_steps), 0)
-    train_step_kwargs['global_step_op'] = tf.assign_add(global_step, 1)
+    #train_step_kwargs['global_step_op'] = tf.assign_add(global_step, 1)
   train_op_g = slim.learning.create_train_op(g_loss, g_optimizer, variables_to_train=var_g, global_step=generator_global_step)
   train_op_d = slim.learning.create_train_op(d_loss, d_optimizer, variables_to_train=var_d, global_step=discriminator_global_step)
-  train_op = [train_op_g, train_op_d]
+  train_op_s = tf.assign_add(global_step, 1)
+  train_op = [train_op_g, train_op_d, train_op_s]
   with tf.Session(config=config) as sess:
     if FLAGS.checkpoint_path:
       if not tf.train.checkpoint_exists(FLAGS.checkpoint_path):
