@@ -34,68 +34,69 @@ def main(*args):
   tf.logging.set_verbosity('INFO') 
   config = tf.ConfigProto()
   config.gpu_options.allow_growth = True
-  provider = slim.dataset_data_provider.DatasetDataProvider(dataset_factory.get_dataset(FLAGS.dataset_name, FLAGS.split_name, FLAGS.dataset_dir), 
-                                      common_queue_capacity=2*FLAGS.batch_size,
-                                      common_queue_min=FLAGS.batch_size)
-  [image] = provider.get(['image'])
-  image = tf.to_float(image)
-  image = tf.subtract(tf.divide(image, 127.5), 1)
-  z = tf.random_uniform(shape=([FLAGS.z_dim]), minval=-1, maxval=1, name='z')
-  [image, z] = tf.train.batch([image, z], batch_size=FLAGS.batch_size, capacity=2*FLAGS.batch_size)
-  generator_result = dcgan_generator(z, 'Generator', reuse=False, output_height=28, fc1_c=1024, grayscale=True)
-  discriminator_g = dcgan_discriminator(generator_result, 'Discriminator', reuse=False, conv2d1_c=128, grayscale=True)
-  discriminator_t = dcgan_discriminator(image, 'Discriminator', reuse=True, conv2d1_c=128, grayscale=True)
-  g_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=discriminator_g)
-  d_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.zeros(FLAGS.batch_size), logits=discriminator_g) + \
-           tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=discriminator_t)
-  g_optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate,
-                                       beta1=FLAGS.beta1,
-                                       beta2=FLAGS.beta2,
-                                       epsilon=FLAGS.epsilon,
-                                       name='g_adam')
-  d_optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate,
-                                       beta1=FLAGS.beta1,
-                                       beta2=FLAGS.beta2,
-                                       epsilon=FLAGS.epsilon,
-                                       name='d-adam')
-  var_g = slim.get_variables(scope='Generator', collection=tf.GraphKeys.TRAINABLE_VARIABLES)
-  var_d = slim.get_variables(scope='Discriminator', collection=tf.GraphKeys.TRAINABLE_VARIABLES)
-  generator_global_step = slim.variable("generator_global_step", 
-                                        shape=[], 
-                                        dtype=tf.int64, 
-                                        initializer=tf.zeros_initializer,
-                                        trainable=False)
-  discriminator_global_step = slim.variable("discriminator_global_step",
-                                            shape=[],
-                                            dtype=tf.int64,
-                                            initializer=tf.zeros_initializer,
-                                            trainable=False)
-  global_step = slim.get_or_create_global_step()
-  saver = tf.train.Saver()
-  with tf.name_scope('train_step'):
-    train_step_kwargs = {}
-    train_step_kwargs['g'] = generator_global_step
-    train_step_kwargs['d'] = discriminator_global_step
-    if FLAGS.max_step:
-      train_step_kwargs['should_stop'] = tf.greater_equal(global_step, FLAGS.max_step)
-    else:
-      train_step_kwargs['should_stop'] = tf.constant(False)
-    train_step_kwargs['should_log'] = tf.equal(tf.mod(global_step, FLAGS.log_every_n_steps), 0)
-    #train_step_kwargs['global_step_op'] = tf.assign_add(global_step, 1)
-  train_op_g = slim.learning.create_train_op(g_loss, g_optimizer, variables_to_train=var_g, global_step=generator_global_step)
-  train_op_d = slim.learning.create_train_op(d_loss, d_optimizer, variables_to_train=var_d, global_step=discriminator_global_step)
-  train_op_s = tf.assign_add(global_step, 1)
-  train_op = [train_op_g, train_op_d, train_op_s]
-  with tf.Session(config=config) as sess:
-    if FLAGS.checkpoint_path:
-      if not tf.train.checkpoint_exists(FLAGS.checkpoint_path):
-        raise ValueError('Checkpoint not exist in path ', FLAGS.checkpoint_path)
+  with tf.Graph().as_default():
+    provider = slim.dataset_data_provider.DatasetDataProvider(dataset_factory.get_dataset(FLAGS.dataset_name, FLAGS.split_name, FLAGS.dataset_dir), 
+                                        common_queue_capacity=2*FLAGS.batch_size,
+                                        common_queue_min=FLAGS.batch_size)
+    [image] = provider.get(['image'])
+    image = tf.to_float(image)
+    image = tf.subtract(tf.divide(image, 127.5), 1)
+    z = tf.random_uniform(shape=([FLAGS.z_dim]), minval=-1, maxval=1, name='z')
+    [image, z] = tf.train.batch([image, z], batch_size=FLAGS.batch_size, capacity=2*FLAGS.batch_size)
+    generator_result = dcgan_generator(z, 'Generator', reuse=False, output_height=28, fc1_c=1024, grayscale=True)
+    discriminator_g = dcgan_discriminator(generator_result, 'Discriminator', reuse=False, conv2d1_c=128, grayscale=True)
+    discriminator_t = dcgan_discriminator(image, 'Discriminator', reuse=True, conv2d1_c=128, grayscale=True)
+    g_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=discriminator_g)
+    d_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.zeros(FLAGS.batch_size), logits=discriminator_g) + \
+             tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=discriminator_t)
+    g_optimizer = tf.train.GradientDescentOptimizer(learning_rate=FLAGS.learning_rate,
+#                                         beta1=FLAGS.beta1,
+#                                         beta2=FLAGS.beta2,
+#                                         epsilon=FLAGS.epsilon,
+                                         name='g_adam')
+    d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=FLAGS.learning_rate,
+#                                         beta1=FLAGS.beta1,
+#                                         beta2=FLAGS.beta2,
+#                                         epsilon=FLAGS.epsilon,
+                                         name='d_adam')
+    var_g = slim.get_variables(scope='Generator', collection=tf.GraphKeys.TRAINABLE_VARIABLES)
+    var_d = slim.get_variables(scope='Discriminator', collection=tf.GraphKeys.TRAINABLE_VARIABLES)
+    generator_global_step = slim.variable("generator_global_step", 
+                                          shape=[], 
+                                          dtype=tf.int64, 
+                                          initializer=tf.zeros_initializer,
+                                          trainable=False)
+    discriminator_global_step = slim.variable("discriminator_global_step",
+                                              shape=[],
+                                              dtype=tf.int64,
+                                              initializer=tf.zeros_initializer,
+                                              trainable=False)
+    global_step = slim.get_or_create_global_step()
+    saver = tf.train.Saver()
+    with tf.name_scope('train_step'):
+      train_step_kwargs = {}
+      train_step_kwargs['g'] = generator_global_step
+      train_step_kwargs['d'] = discriminator_global_step
+      if FLAGS.max_step:
+        train_step_kwargs['should_stop'] = tf.greater_equal(global_step, FLAGS.max_step)
       else:
-        restore_vars = slim.get_variables_to_restore(exclude_patterns=split(FLAGS.exclude_scope, ','))
-        sess.run(slim.assign_from_checkpoint(FLAGS.checkpoint_path, restore_vars, ignore_missing_vars=False))
-    else:
-      sess.run(tf.global_variables_initializer())
-    slim.learning.train(train_op, FLAGS.train_dir, global_step=global_step, train_step_fn=dcgan_train_step, train_step_kwargs=train_step_kwargs)
+        train_step_kwargs['should_stop'] = tf.constant(False)
+      train_step_kwargs['should_log'] = tf.equal(tf.mod(global_step, FLAGS.log_every_n_steps), 0)
+    train_op_g = slim.learning.create_train_op(g_loss, g_optimizer, variables_to_train=var_g, global_step=generator_global_step)
+    train_op_d = slim.learning.create_train_op(d_loss, d_optimizer, variables_to_train=var_d, global_step=discriminator_global_step)
+    train_op_s = tf.assign_add(global_step, 1)
+    train_op = [train_op_g, train_op_d, train_op_s]
+    print(var_g, var_d, tf.get_collection(tf.GraphKeys.UPDATE_OPS))
+    with tf.Session(config=config) as sess:
+      if FLAGS.checkpoint_path:
+        if not tf.train.checkpoint_exists(FLAGS.checkpoint_path):
+          raise ValueError('Checkpoint not exist in path ', FLAGS.checkpoint_path)
+        else:
+          restore_vars = slim.get_variables_to_restore(exclude_patterns=split(FLAGS.exclude_scope, ','))
+          sess.run(slim.assign_from_checkpoint(FLAGS.checkpoint_path, restore_vars, ignore_missing_vars=False))
+      else:
+        sess.run(tf.global_variables_initializer())
+      slim.learning.train(train_op, FLAGS.train_dir, global_step=global_step, train_step_fn=dcgan_train_step, train_step_kwargs=train_step_kwargs)
   return
 
 if __name__ == '__main__':

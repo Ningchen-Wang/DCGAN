@@ -60,11 +60,11 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
   discriminator_global_step = train_step_kwargs['d']
 
   # Generator step 
-  generator_loss, generator_global_step = sess.run([generator_train_op, generator_global_step],
+  generator_loss, np_generator_global_step = sess.run([generator_train_op, generator_global_step],
                                             options=trace_run_options,
                                             run_metadata=run_metadata)
   # Discriminator step
-  discriminator_loss, discriminator_global_step = sess.run([discriminator_train_op, discriminator_global_step],
+  discriminator_loss, np_discriminator_global_step = sess.run([discriminator_train_op, discriminator_global_step],
                                                 options=trace_run_options,
                                                 run_metadata=run_metadata)
   # Increase global_step
@@ -87,8 +87,8 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
 
   if 'should_log' in train_step_kwargs:
     if sess.run(train_step_kwargs['should_log']):
-      tf.logging.info('global step %d: loss = %.4f g_loss = %.4f d_loss = %.4f (%.3f sec/step)',
-                     np_global_step, total_loss, generator_loss, discriminator_loss, time_elapsed)
+      tf.logging.info('global step %d: loss = %f g_loss = %f d_loss = %f (%.3f sec/step)',
+                     np_generator_global_step, total_loss, generator_loss, discriminator_loss, time_elapsed)
 
   # TODO(nsilberman): figure out why we can't put this into sess.run. The
   # issue right now is that the stop check depends on the global step. The
