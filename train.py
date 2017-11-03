@@ -58,6 +58,9 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
   global_step_train_op = train_ops[2]
   generator_global_step = train_step_kwargs['g']
   discriminator_global_step = train_step_kwargs['d']
+  dis_g, dis_d = sess.run([tf.get_default_graph().get_tensor_by_name('Discriminator/Sigmoid:0'), tf.get_default_graph().get_tensor_by_name('Discriminator_1/Sigmoid:0')])
+  print(dis_g)
+  print(dis_d)
 
   # Generator step 
   generator_loss, np_generator_global_step = sess.run([generator_train_op, generator_global_step],
@@ -93,7 +96,6 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
     if sess.run(train_step_kwargs['should_log']):
       tf.logging.info('global step %d: loss = %.4f g_step = %d g_loss = %.4f d_step = %d d_loss = %.4f (%.3f sec/step)',
                      np_global_step, total_loss, np_generator_global_step, generator_loss, np_discriminator_global_step, discriminator_loss, time_elapsed)
-
   # TODO(nsilberman): figure out why we can't put this into sess.run. The
   # issue right now is that the stop check depends on the global step. The
   # increment of global step often happens via the train op, which used

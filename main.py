@@ -45,11 +45,12 @@ def main(*args):
     z = tf.random_uniform(shape=([FLAGS.z_dim]), minval=-1, maxval=1, name='z')
     [image, z] = tf.train.batch([image, z], batch_size=FLAGS.batch_size, capacity=2*FLAGS.batch_size)
     generator_result = dcgan_generator(z, 'Generator', reuse=False, output_height=28, fc1_c=1024, grayscale=True)
-    discriminator_g = dcgan_discriminator(generator_result, 'Discriminator', reuse=False, conv2d1_c=128, grayscale=True)
-    discriminator_t = dcgan_discriminator(image, 'Discriminator', reuse=True, conv2d1_c=128, grayscale=True)
-    g_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=discriminator_g)
-    d_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.zeros(FLAGS.batch_size), logits=discriminator_g) + \
-             tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=discriminator_t)
+    discriminator_g, g_logits = dcgan_discriminator(generator_result, 'Discriminator', reuse=False, conv2d1_c=128, grayscale=True)
+    discriminator_t, t_logits = dcgan_discriminator(image, 'Discriminator', reuse=True, conv2d1_c=128, grayscale=True)
+    print(discriminator_g.name, discriminator_t.name)
+    g_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=g_logits)
+    d_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.zeros(FLAGS.batch_size), logits=g_logits) + \
+             tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=t_logits)
     if FLAGS.optimizer == 'Adam':
       g_optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate,
                                            beta1=FLAGS.beta1,

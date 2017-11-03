@@ -92,7 +92,7 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
                                  normalizer_fn=None,
                                  scope='deconv2d5')
   
-  return deconv2d5
+    return deconv2d5
 
 def dcgan_discriminator(inputs, scope, reuse=None, conv2d1_c=128, 
                         grayscale=False):
@@ -143,8 +143,7 @@ def dcgan_discriminator(inputs, scope, reuse=None, conv2d1_c=128,
     flatten5 = slim.flatten(inputs=conv2d4, scope='flatten5')
     fc5 = slim.fully_connected(inputs=flatten5,
                                num_outputs=1,
-                               activation_fn=tf.sigmoid,
                                scope='fc5')
     fc5 = tf.squeeze(fc5)
-  return fc5
+    return tf.nn.sigmoid(fc5), fc5
 
