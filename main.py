@@ -46,11 +46,10 @@ def main(*args):
     [image, z] = tf.train.batch([image, z], batch_size=FLAGS.batch_size, capacity=2*FLAGS.batch_size)
     generator_result = dcgan_generator(z, 'Generator', reuse=False, output_height=28, fc1_c=1024, grayscale=True)
     discriminator_g, g_logits = dcgan_discriminator(generator_result, 'Discriminator', reuse=False, conv2d1_c=128, grayscale=True)
-    discriminator_t, t_logits = dcgan_discriminator(image, 'Discriminator', reuse=True, conv2d1_c=128, grayscale=True)
-    print(discriminator_g.name, discriminator_t.name)
+    discriminator_d, d_logits = dcgan_discriminator(image, 'Discriminator', reuse=True, conv2d1_c=128, grayscale=True)
     g_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=g_logits)
     d_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.zeros(FLAGS.batch_size), logits=g_logits) + \
-             tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=t_logits)
+             tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=d_logits)
     if FLAGS.optimizer == 'Adam':
       g_optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate,
                                            beta1=FLAGS.beta1,
@@ -81,7 +80,6 @@ def main(*args):
                                               initializer=tf.zeros_initializer,
                                               trainable=False)
     global_step = slim.get_or_create_global_step()
-    saver = tf.train.Saver()
     with tf.name_scope('train_step'):
       train_step_kwargs = {}
       train_step_kwargs['g'] = generator_global_step
@@ -95,6 +93,7 @@ def main(*args):
     train_op_d = slim.learning.create_train_op(d_loss, d_optimizer, variables_to_train=var_d, global_step=discriminator_global_step)
     train_op_s = tf.assign_add(global_step, 1)
     train_op = [train_op_g, train_op_d, train_op_s]
+    saver = tf.train.Saver()
     with tf.Session(config=config) as sess:
       sess.run(tf.global_variables_initializer())
       if FLAGS.checkpoint_path:
