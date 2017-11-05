@@ -24,7 +24,9 @@ flags.DEFINE_float('beta1', 0.5, 'Beta1 for Adam optimizer [0.5]')
 flags.DEFINE_float('beta2', 0.999, 'Beta2 for Adam optimizer [0.999]')
 flags.DEFINE_float('epsilon', 1e-8, 'Epsilon for Adam optimizer [1e-8]')
 flags.DEFINE_integer('log_every_n_steps', 10, 'Log every n training steps [10]')
-flags.DEFINE_integer('save_interval_secs', 600, 'How often, in seconds, to save the model checkpoint')
+flags.DEFINE_integer('save_interval_secs', 600, 'How often, in seconds, to save the model checkpoint [600]')
+flags.DEFINE_integer('save_summaries_secs', 10, 'How often, in seconds, to save the summary [10]')
+flags.DEFINE_integer('sample_n', 16, 'How many images the network will produce in a sample process [16]')
 
 def main(*args):
   FLAGS = flags.FLAGS
@@ -43,13 +45,17 @@ def main(*args):
     image = tf.to_float(image)
     image = tf.subtract(tf.divide(image, 127.5), 1)
     z = tf.random_uniform(shape=([FLAGS.z_dim]), minval=-1, maxval=1, name='z')
-    [image, z] = tf.train.batch([image, z], batch_size=FLAGS.batch_size, capacity=2*FLAGS.batch_size)
+    label_true = tf.random_uniform(shape=([]), minval=0.7, maxval=1, name='label_t')
+    label_false = tf.random_uniform(shape=([]), minval=0, maxval=0.3, name='label_f')
+    sampler_z = tf.random_uniform(shape=([FLAGS.batch_size, FLAGS.z_dim]), minval=-1, maxval=1, name='sampler_z')
+    [image, z, label_true, label_false] = tf.train.batch([image, z, label_true, label_false], batch_size=FLAGS.batch_size, capacity=2*FLAGS.batch_size)
     generator_result = dcgan_generator(z, 'Generator', reuse=False, output_height=28, fc1_c=1024, grayscale=True)
+    sampler_result = dcgan_generator(sampler_z, 'Generator', reuse=True, output_height=28, fc1_c=1024, grayscale=True)
     discriminator_g, g_logits = dcgan_discriminator(generator_result, 'Discriminator', reuse=False, conv2d1_c=128, grayscale=True)
     discriminator_d, d_logits = dcgan_discriminator(image, 'Discriminator', reuse=True, conv2d1_c=128, grayscale=True)
-    g_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=g_logits)
-    d_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.zeros(FLAGS.batch_size), logits=g_logits) + \
-             tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones(FLAGS.batch_size), logits=d_logits)
+    g_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=label_true, logits=g_logits)
+    d_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=label_false, logits=g_logits)
+             #tf.losses.sigmoid_cross_entropy(multi_class_labels=label_true, logits=d_logits)
     if FLAGS.optimizer == 'Adam':
       g_optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate,
                                            beta1=FLAGS.beta1,
@@ -64,7 +70,7 @@ def main(*args):
     elif FLAGS.optimizer == 'SGD':
       g_optimizer = tf.train.GradientDescentOptimizer(learning_rate=FLAGS.learning_rate,
                                                       name='g_sgd')
-      d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=FLAGS.learning_rate,
+      d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=FLAGS.learning_rate * 10,
                                                       name='d_sgd')
 
     var_g = slim.get_variables(scope='Generator', collection=tf.GraphKeys.TRAINABLE_VARIABLES)
@@ -93,6 +99,10 @@ def main(*args):
     train_op_d = slim.learning.create_train_op(d_loss, d_optimizer, variables_to_train=var_d, global_step=discriminator_global_step)
     train_op_s = tf.assign_add(global_step, 1)
     train_op = [train_op_g, train_op_d, train_op_s]
+    tf.summary.image('sampler_z', sampler_result, max_outputs=16)
+    tf.summary.scalar('g_loss', g_loss)
+    tf.summary.scalar('d_loss', d_loss)
+    tf.summary.scalar('total_loss', g_loss + d_loss)
     saver = tf.train.Saver()
     with tf.Session(config=config) as sess:
       sess.run(tf.global_variables_initializer())
@@ -108,7 +118,8 @@ def main(*args):
                           train_step_fn=dcgan_train_step,
                           train_step_kwargs=train_step_kwargs,
                           saver=saver,
-                          save_interval_secs=FLAGS.save_interval_secs)
+                          save_interval_secs=FLAGS.save_interval_secs,
+                          save_summaries_secs=FLAGS.save_summaries_secs)
   return
 
 if __name__ == '__main__':

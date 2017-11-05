@@ -56,6 +56,8 @@ def dcgan_generator(inputs, scope, reuse=None, output_height=64,
     fc1 = slim.fully_connected(inputs=inputs, 
                                num_outputs=fc1_h*fc1_w*fc1_c,
                                activation_fn=None,
+                               biases_initializer=tf.zeros_initializer,
+                               biases_regularizer=slim.l2_regularizer,
                                scope='fc1')
     fc1_reshape = tf.reshape(fc1, [-1, fc1_h, fc1_w, fc1_c])
     bn1 = slim.batch_norm(inputs=fc1_reshape, activation_fn=tf.nn.relu, scope='bn1')
@@ -143,7 +145,16 @@ def dcgan_discriminator(inputs, scope, reuse=None, conv2d1_c=128,
     flatten5 = slim.flatten(inputs=conv2d4, scope='flatten5')
     fc5 = slim.fully_connected(inputs=flatten5,
                                num_outputs=1,
+                               biases_initializer=tf.zeros_initializer,
+                               biases_regularizer=slim.l2_regularizer,
+                               activation_fn=None,
                                scope='fc5')
     fc5 = tf.squeeze(fc5)
-    return tf.nn.sigmoid(fc5), fc5
+    tf.summary.histogram('conv2d1', conv2d1)
+    tf.summary.histogram('conv2d2', conv2d2)
+    tf.summary.histogram('conv2d3', conv2d3)
+    tf.summary.histogram('conv2d4', conv2d4)
+    tf.summary.histogram('fc5', fc5)
+    tf.summary.histogram('fc5/weights', tf.get_default_graph().get_tensor_by_name('Discriminator/fc5/weights:0'))
+  return tf.nn.sigmoid(fc5), fc5
 
