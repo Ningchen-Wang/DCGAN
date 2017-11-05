@@ -156,5 +156,5 @@ def dcgan_discriminator(inputs, scope, reuse=None, conv2d1_c=128,
     tf.summary.histogram('conv2d4', conv2d4)
     tf.summary.histogram('fc5', fc5)
     tf.summary.histogram('fc5/weights', tf.get_default_graph().get_tensor_by_name('Discriminator/fc5/weights:0'))
-  return tf.nn.sigmoid(fc5), fc5
+    return tf.nn.sigmoid(fc5), fc5
 

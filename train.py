@@ -58,23 +58,22 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
   global_step_train_op = train_ops[2]
   generator_global_step = train_step_kwargs['g']
   discriminator_global_step = train_step_kwargs['d']
-  dis_g, dis_d = sess.run([tf.get_default_graph().get_tensor_by_name('Discriminator/Squeeze:0'), tf.get_default_graph().get_tensor_by_name('Discriminator_1/Squeeze:0')])
+  dis_g, dis_d = sess.run([tf.get_default_graph().get_tensor_by_name('Discriminator/Sigmoid:0'), tf.get_default_graph().get_tensor_by_name('Discriminator_1/Sigmoid:0')])
   print(dis_g)
   print(dis_d)
 
   # Discriminator step
   discriminator_loss, np_discriminator_global_step = sess.run([discriminator_train_op, discriminator_global_step],
-                                                options=trace_run_options,
-                                                run_metadata=run_metadata)
-  # Generator step 
-#  generator_loss, np_generator_global_step = sess.run([generator_train_op, generator_global_step],
-#                                            options=trace_run_options,
-#                                            run_metadata=run_metadata)
+                                                              options=trace_run_options,
+                                                              run_metadata=run_metadata)
   # One more generator step
-#  generator_loss, np_generator_global_step = sess.run([generator_train_op, generator_global_step],
-#                                            options=trace_run_options,
-#                                            run_metadata=run_metadata)
-  generator_loss, np_generator_global_step = 0, 0
+  generator_loss, np_generator_global_step = sess.run([generator_train_op, generator_global_step],
+                                                      options=trace_run_options,
+                                                      run_metadata=run_metadata)
+  # Generator step 
+  generator_loss, np_generator_global_step = sess.run([generator_train_op, generator_global_step],
+                                                      options=trace_run_options,
+                                                      run_metadata=run_metadata)
   # Increase global_step
   np_global_step = sess.run(global_step_train_op)
 

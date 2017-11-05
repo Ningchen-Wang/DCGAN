@@ -54,8 +54,8 @@ def main(*args):
     discriminator_g, g_logits = dcgan_discriminator(generator_result, 'Discriminator', reuse=False, conv2d1_c=128, grayscale=True)
     discriminator_d, d_logits = dcgan_discriminator(image, 'Discriminator', reuse=True, conv2d1_c=128, grayscale=True)
     g_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=label_true, logits=g_logits)
-    d_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=label_false, logits=g_logits)
-             #tf.losses.sigmoid_cross_entropy(multi_class_labels=label_true, logits=d_logits)
+    d_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=label_false, logits=g_logits) + \
+             tf.losses.sigmoid_cross_entropy(multi_class_labels=label_true, logits=d_logits)
     if FLAGS.optimizer == 'Adam':
       g_optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate,
                                            beta1=FLAGS.beta1,
@@ -70,7 +70,7 @@ def main(*args):
     elif FLAGS.optimizer == 'SGD':
       g_optimizer = tf.train.GradientDescentOptimizer(learning_rate=FLAGS.learning_rate,
                                                       name='g_sgd')
-      d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=FLAGS.learning_rate * 10,
+      d_optimizer = tf.train.GradientDescentOptimizer(learning_rate=FLAGS.learning_rate,
                                                       name='d_sgd')
 
     var_g = slim.get_variables(scope='Generator', collection=tf.GraphKeys.TRAINABLE_VARIABLES)
