@@ -116,6 +116,7 @@ def dcgan_discriminator(inputs, scope, reuse=None, conv2d1_c=128,
                           activation_fn=leaky_relu,
                           normalizer_fn=None,
                           scope='conv2d1')
+
     conv2d2 = slim.conv2d(inputs=conv2d1,
                           num_outputs=conv2d1_c * 2,
                           kernel_size=5,
@@ -142,7 +143,9 @@ def dcgan_discriminator(inputs, scope, reuse=None, conv2d1_c=128,
                           activation_fn=leaky_relu,
                           normalizer_fn=slim.batch_norm,
                           scope='conv2d4')
+    
     flatten5 = slim.flatten(inputs=conv2d4, scope='flatten5')
+    
     fc5 = slim.fully_connected(inputs=flatten5,
                                num_outputs=1,
                                biases_initializer=tf.zeros_initializer,
@@ -150,11 +153,11 @@ def dcgan_discriminator(inputs, scope, reuse=None, conv2d1_c=128,
                                activation_fn=None,
                                scope='fc5')
     fc5 = tf.squeeze(fc5)
-    tf.summary.histogram('conv2d1', conv2d1)
-    tf.summary.histogram('conv2d2', conv2d2)
-    tf.summary.histogram('conv2d3', conv2d3)
-    tf.summary.histogram('conv2d4', conv2d4)
-    tf.summary.histogram('fc5', fc5)
-    tf.summary.histogram('fc5/weights', tf.get_default_graph().get_tensor_by_name('Discriminator/fc5/weights:0'))
+    #tf.summary.histogram('conv2d1', conv2d1)
+    #tf.summary.histogram('conv2d2', conv2d2)
+    #tf.summary.histogram('conv2d3', conv2d3)
+    #tf.summary.histogram('conv2d4', conv2d4)
+    #tf.summary.histogram('fc5', fc5)
+    #tf.summary.histogram('fc5/weights', tf.get_default_graph().get_tensor_by_name('Discriminator/fc5/weights:0'))
     return tf.nn.sigmoid(fc5), fc5
 

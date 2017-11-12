@@ -59,6 +59,10 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
   generator_global_step = train_step_kwargs['g']
   discriminator_global_step = train_step_kwargs['d']
   dis_g, dis_d = sess.run([tf.get_default_graph().get_tensor_by_name('Discriminator/Sigmoid:0'), tf.get_default_graph().get_tensor_by_name('Discriminator_1/Sigmoid:0')])
+  #dis_g1, dis_d1 = tf.get_default_graph().get_tensor_by_name('Discriminator/conv2d1/Maximum:0'), tf.get_default_graph().get_tensor_by_name('Discriminator_1/conv2d1/Maximum:0')
+  #dis_g2, dis_d2 = tf.get_default_graph().get_tensor_by_name('Discriminator/conv2d2/Maximum:0'), tf.get_default_graph().get_tensor_by_name('Discriminator_1/conv2d2/Maximum:0')
+  #dis_g3, dis_d3 = tf.get_default_graph().get_tensor_by_name('Discriminator/conv2d3/Maximum:0'), tf.get_default_graph().get_tensor_by_name('Discriminator_1/conv2d3/Maximum:0')
+  #dis_g4, dis_d4 = tf.get_default_graph().get_tensor_by_name('Discriminator/conv2d4/Maximum:0'), tf.get_default_graph().get_tensor_by_name('Discriminator_1/conv2d4/Maximum:0')
   print(dis_g)
   print(dis_d)
 
@@ -67,9 +71,9 @@ def dcgan_train_step(sess, train_ops, global_step, train_step_kwargs):
                                                               options=trace_run_options,
                                                               run_metadata=run_metadata)
   # One more generator step
-  generator_loss, np_generator_global_step = sess.run([generator_train_op, generator_global_step],
-                                                      options=trace_run_options,
-                                                      run_metadata=run_metadata)
+  #generator_loss, np_generator_global_step = sess.run([generator_train_op, generator_global_step],
+  #                                                    options=trace_run_options,
+  #                                                    run_metadata=run_metadata)
   # Generator step 
   generator_loss, np_generator_global_step = sess.run([generator_train_op, generator_global_step],
                                                       options=trace_run_options,
