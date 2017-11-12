@@ -142,14 +142,25 @@ def main(*args):
     train_op_g = slim.learning.create_train_op(g_loss, g_optimizer, variables_to_train=var_g, global_step=generator_global_step)
     train_op_s = tf.assign_add(global_step, 1)
     train_op = [train_op_g, train_op_d, train_op_s]
+    def group_image(images):
+      sampler_result = tf.split(images, FLAGS.batch_size // 16, axis=0)
+      group_sample = []
+      for sample in sampler_result:
+        unstack_sample = tf.unstack(sample, num=16, axis=0)
+        group_sample.append(tf.concat([tf.concat([unstack_sample[i*4+j] for j in range(4)], axis=1) for i in range(4)], axis=0))
+      sampler_result = tf.stack(group_sample, axis=0)
+      return sampler_result
+    sampler_result = group_image(sampler_result)
+    train_data = group_image(image)
     tf.summary.image('sampler_z', sampler_result, max_outputs=16)
-    tf.summary.scalar('g_loss', g_loss)
-    tf.summary.scalar('d_loss', d_loss)
+    tf.summary.image('train_data', train_data, max_outputs=16)
+    tf.summary.scalar('loss/g_loss', g_loss)
+    tf.summary.scalar('loss/d_loss', d_loss)
+    tf.summary.scalar('loss/standard_g_loss', standard_g_loss)
+    tf.summary.scalar('loss/total_loss', g_loss + d_loss)
+    tf.summary.scalar('loss/standard_total_loss', standard_g_loss + d_loss)
     if FLAGS.unrolled_step != 0:
-      tf.summary.scalar('unrolled_loss', unrolled_loss)
-    tf.summary.scalar('standard_g_loss', standard_g_loss)
-    tf.summary.scalar('total_loss', g_loss + d_loss)
-    tf.summary.scalar('standard_total_loss', standard_g_loss + d_loss)
+      tf.summary.scalar('loss/unrolled_loss', unrolled_loss)
     saver = tf.train.Saver()
     with tf.Session(config=config) as sess:
       sess.run(tf.global_variables_initializer())
